@@ -4,21 +4,22 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const { phoneNumber, amount, accountReference, transactionDescription } = req.body;
-      const consumerKey = process.env.consumerKey;
-      const consumerSecret = process.env.consumerSecret;
-      const shortcode = process.env.shortcode;
-      const initiatorName = process.env.initiatorName;
-      const securityCredential = process.env.securityCredential;
-      const queueTimeOutURL = process.env.queueTimeOutURL;
-      const resultURL = process.env.resultURL;
+      const consumerKey = process.env.MPESA_CONSUMER_KEY;
+      const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+      const shortcode = process.env.MPESA_SHORTCODE;
+      const initiatorName = process.env.MPESA_INITIATOR_NAME;
+      const securityCredential = process.env.MPESA_SECURITY_CREDENTIAL;
+      const queueTimeOutURL = process.env.MPESA_QUEUE_TIME_URL;
+      const resultURL = process.env.MPESA_RESULT_URL;
 
       // Generate the access token
       const { data: { access_token } } = await axios.get('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
         headers: {
-            Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
         },
-        });
+      });
 
+      // Prepare the b2c request payload
       const payload = {
         InitiatorName: initiatorName,
         SecurityCredential: securityCredential,
@@ -32,7 +33,8 @@ export default async function handler(req, res) {
         Occasion: accountReference,
       };
 
-      const response = await axios.post(
+      // initiate the B2C request
+      const { data } = await axios.post(
         'https://sandbox.safaricom.co.ke/mpesa/b2c/v1/paymentrequest',
         payload,
         {
@@ -43,8 +45,8 @@ export default async function handler(req, res) {
         }
       );
 
+      console.log('B2C payment request sent successfully', data)
       res.status(200).json({ success: true, message: 'B2C payment request sent successfully' });
-      console.log(response)
     } catch (error) {
       console.error('Failed to send B2C payment request:', error);
       res.status(500).json({ success: false, message: 'Failed to send B2C payment request' });
